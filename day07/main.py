@@ -1,11 +1,8 @@
 from pathlib import Path
 
 input = [x.rstrip() for x in open('input', 'r')]
-
 tree = {}
-i = 0
-cur = None
-root = Path('/')
+i, cur = 0, Path()
 while i < len(input):
     line = input[i]
     assert line[0] == '$'
@@ -13,7 +10,7 @@ while i < len(input):
     cmd = line[2:]
     if cmd[:2] == 'cd':
         path = cmd[3:]
-        cur = root if path == '/' else (cur / path).resolve()
+        cur = (cur / path).resolve()
     else:
         assert cmd == 'ls'
         while i < len(input) and (line := input[i])[0] != '$':
@@ -25,21 +22,17 @@ while i < len(input):
             tree[cur].append(c)
             i += 1
 
+root = Path('/')
 size = {}
-def fillsize(p):
-    n = 0
-    for it in tree[p]:
-        if it[0] == 'dir':
-            n += fillsize(p / it[1])
-        else:
-            n += it[0]
-    size[p] = n
-    return n
-fillsize(root)
+def calc(p):
+    size[p] = sum(calc(p / file) if t == 'dir' else t for t, file in tree[p])
+    return size[p]
+calc(root)
 
 target = root
 for d, s in size.items():
-    if s > size[root] - 40_000_000 and size[d] < size[target]:
+    # to get enough space, need size[root] - s < 40_000_000
+    if size[root] - 40_000_000 < s < size[target]:
         target = d
 
 print('a) %d' % sum(s for s in size.values() if s < 100_000))
