@@ -1,37 +1,18 @@
-m = [list(map(int, x.rstrip())) for x in open('input', 'r')]
-w, h = len(m[0]), len(m)
-assert w == h
+import numpy as np
 
-vis = set()
-for i in range(1, w-1):
-    acc = m[0][i]
-    for row in range(1, h-1):
-        if acc < m[row][i]:
-            vis.add((row,i))
-        acc = max(acc, m[row][i])
-    acc = m[h-1][i]
-    for row in range(h-2, 0, -1):
-        if acc < m[row][i]:
-            vis.add((row,i))
-        acc = max(acc, m[row][i])
+m = np.array([list(map(int, x.rstrip())) for x in open('input', 'r')])
+w, h = m.shape
 
-for i in range(1, h-1):
-    acc = m[i][0]
-    for col in range(1, w-1):
-        if acc < m[i][col]:
-            vis.add((i,col))
-        acc = max(acc, m[i][col])
-    acc = m[i][h-1]
-    for col in range(w-2, 0, -1):
-        if acc < m[i][col]:
-            vis.add((i,col))
-        acc = max(acc, m[i][col])
+vis = np.zeros((w-2, h-2), dtype=int)
+for i in range(4):
+    vis |= np.rot90((m[1:] > np.maximum.accumulate(m, axis=0)[:-1])[:-1,1:-1], k=4-i)
+    m = np.rot90(m)
+print('a) %d' % (4*(w-1)+np.sum(vis)))
 
-print('a) %d' % (4*w - 4 + len(vis)))
+scenic = np.zeros((w, h), dtype=int)
 
-scenic = [[0]*w for _ in range(h)]
-for ri in range(h):
-    for cj in range(w):
+for ri in range(1,h-1):
+    for cj in range(1,w-1):
         height = m[ri][cj]
         up = 0
         for row in range(ri-1, -1, -1):
@@ -55,4 +36,4 @@ for ri in range(h):
                 break
         scenic[ri][cj] = up*down*left*right
 
-print('b) %d' % max(map(max, scenic)))
+print('b) %d' % np.max(scenic))
