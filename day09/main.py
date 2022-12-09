@@ -1,94 +1,37 @@
 import numpy as np
 
-"""
-width, height = 30, 30
-ox, oy = 12, -5
-
-def draw(kn):
-    chart = [['.']*width for _ in range(height)]
-    chart[height-1-kn[0][1]+oy][kn[0][0]+ox] = 'H'
-    for i in range(1, len(kn)):
-        chart[height-1-kn[i][1]+oy][kn[i][0]+ox] = '%d' % i
-    for row in chart:
-        print(''.join(row))
-    print()
-"""
-
 steps = [x.rstrip().split() for x in open('input', 'r')]
-steps = [(x, int(y)) for x, y in steps]
+steps = [(['U', 'D', 'L', 'R'].index(x), int(y)) for x, y in steps]
 
-go = {
-    'U': np.array([ 0, 1]),
-    'D': np.array([ 0,-1]),
-    'L': np.array([-1, 0]),
-    'R': np.array([ 1, 0]),
-}
-diag = [
-    np.array([ 1, 1]),
-    np.array([ 1,-1]),
-    np.array([-1,-1]),
-    np.array([-1, 1]),
-]
+M = np.array([
+    [ 0,  0, -1,  1,  1,  1, -1, -1],
+    [ 1, -1,  0,  0,  1, -1, -1,  1],
+])
+N = np.array([
+    [ 1,  2,  2,  1, -1, -2, -2, -1],
+    [ 2,  1, -1, -2, -2, -1,  1,  2],
+])
 
-H, T = np.array([0,0]), np.array([0,0])
+knots = [np.array([0,0]) for _ in range(10)]
 
-visited = set()
-visited.add(tuple(T))
+va, vb = set([tuple(knots[0])]), set([tuple(knots[0])])
 for dir, mag in steps:
     for _ in range(mag):
-        H += go[dir]
-        d = H-T
-        for cmp in go.values():
-            if np.array_equal(2*cmp, d):
-                T += cmp
-                break
-            elif np.array_equal(cmp, d):
-                break
-        else:
-            br = False
-            for cmp in diag:
-                for cmp2 in go.values():
-                    if np.array_equal(H-(T+cmp), cmp2):
-                        T += cmp
-                        br = True
-                        break
-                if br: break
-        visited.add(tuple(T))
-        # draw(H, T)
+        knots[0] += M[:,dir]
+        for i in range(1, len(knots)):
+            d = knots[i-1] - knots[i]
+            if (d[:,None] == M).all(axis=0).any():
+                continue  # Still close enough
+            elif (d[:,None] == 2*M).all(axis=0).any():
+                knots[i] += d // 2  # Move in same direction
+            elif (found := (d[:,None] == N).all(axis=0)).any():
+                # Pick the diagonal move that catches up
+                j = (found.nonzero()[0][0] // 2)
+                knots[i] += M[:,4+j]
+            if i == 1:
+                va.add(tuple(knots[i]))
+            elif i == len(knots)-1:
+                vb.add(tuple(knots[i]))
 
-print("a) %d" % len(visited))
-
-kn = [np.array([0,0]) for _ in range(10)]
-
-visited = set()
-visited.add(tuple(kn[0]))
-for dir, mag in steps:
-    for _ in range(mag):
-        kn[0] += go[dir]
-        for i in range(1, len(kn)):
-            d = kn[i-1] - kn[i]
-            for cmp in go.values():
-                if np.array_equal(2*cmp, d):
-                    kn[i] += cmp
-                    break
-                elif np.array_equal(cmp, d):
-                    break
-            else:
-                br = False
-                for cmp in diag:
-                    for cmp2 in go.values():
-                        if np.array_equal(kn[i-1]-(kn[i]+cmp), cmp2):
-                            kn[i] += cmp
-                            br = True
-                            break
-                    if br: break
-                else:
-                    for cmp in diag:
-                        if np.array_equal(2*cmp, d):
-                            kn[i] += cmp
-                            break
-            if i == len(kn)-1:
-                visited.add(tuple(kn[i]))
-            # draw(kn)
-
-print("b) %d" % len(visited))
+print("a) %d" % len(va))
+print("b) %d" % len(vb))
