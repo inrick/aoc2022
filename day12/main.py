@@ -10,29 +10,30 @@ for i, row in enumerate(input):
     if (j := row.find('E')) != -1:
         E = i, j
 chart = [[height(x) for x in xx] for xx in input]
+ht = lambda x: chart[x[0]][x[1]]
 h, w = len(chart), len(chart[0])
 
 def valid(a, b):  # valid to move from a to b
-    if not (0 <= b[0] < h) or not (0 <= b[1] < w):
-        return False
-    ha, hb = chart[a[0]][a[1]], chart[b[0]][b[1]]
-    return (hb - ha) == 1 or hb <= ha
+    for x in a, b:  # check both in case we're moving from b to a
+        if not (0 <= x[0] < h) or not (0 <= x[1] < w):
+            return False
+    return ht(b) - ht(a) <= 1
 
-def bfs(S, E):
+def bfs(S, valid, found):
     path = {}
     seen = set()
     q = [(None, S)]
     while q:
         prev, node = q.pop(0)
         path[node] = prev
-        if node == E:
+        if found(node):
             break
         for i, j in (0,1), (1,0), (0,-1), (-1,0):
             target = (node[0]+i, node[1]+j)
             if target not in seen and valid(node, target):
                 q.append((node, target))
                 seen.add(target)
-    if node != E:
+    if not found(node):
         return -1
     steps = 0
     while node != S:
@@ -40,11 +41,5 @@ def bfs(S, E):
         steps += 1
     return steps
 
-lens = []
-for i, row in enumerate(chart):
-    for j, lev in enumerate(row):
-        if lev == 0 and (steps := bfs((i, j), E)) != -1:
-            lens.append(steps)
-
-print('a) %d' % bfs(S, E))
-print('b) %d' % min(lens))
+print('a) %d' % bfs(S, valid, lambda x: x == E))
+print('b) %d' % bfs(E, lambda a, b: valid(b, a), lambda x: ht(x) == 0))
